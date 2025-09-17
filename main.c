@@ -50,6 +50,7 @@ int main() {
             }
           }
           items[n] = result;
+          free(result);
           n++;
         }
       }
