@@ -62,7 +62,7 @@ int main() {
   if (scanf("%zu", &choice) == 1 && choice <= n) {
     pid = fork();
     if (pid == 0) {
-      execl("/usr/bin/sudo", "sudo", "/usr/sbin/grub-reboot", items[n],
+      execl("/usr/bin/sudo", "sudo", "/usr/sbin/grub-reboot", items[choice],
             (char *)NULL);
       return 1;
     } else if (pid > 0) {
