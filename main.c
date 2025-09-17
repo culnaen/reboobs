@@ -24,7 +24,7 @@ int main() {
   items = NULL;
 
   fp = fopen("/boot/grub/grub.cfg", "r");
-  if (fp == NULL && fp) {
+  if (fp == NULL) {
     perror("error");
   }
 
