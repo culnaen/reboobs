@@ -30,7 +30,7 @@ int main() {
 
   while (fgets(buf, 256, fp)) {
     if (buf[0] == menu_chr) {
-      start_ptr = strchr(buf + 10, delimiter);
+      start_ptr = buf + 10;
       if (start_ptr) {
         end_ptr = strchr(start_ptr + 1, delimiter);
         if (end_ptr) {
