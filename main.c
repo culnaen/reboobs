@@ -5,13 +5,16 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define DELIMITER '\''
+#define MENU_CHR 'm'
+#define START_DELIMITER_POSITION 10
+
 int main() {
   FILE *fp;
   char buf[256];
+  size_t buf_size = 256;
   char *start_ptr;
   char *end_ptr;
-  char delimiter = '\'';
-  char menu_chr = 'm';
   char *result;
   char **items;
   size_t n;
@@ -28,11 +31,11 @@ int main() {
     perror("error");
   }
 
-  while (fgets(buf, 256, fp)) {
-    if (buf[0] == menu_chr) {
-      start_ptr = buf + 10;
+  while (fgets(buf, buf_size, fp)) {
+    if (buf[0] == MENU_CHR) {
+      start_ptr = buf + START_DELIMITER_POSITION;
       if (start_ptr) {
-        end_ptr = strchr(start_ptr + 1, delimiter);
+        end_ptr = strchr(start_ptr + 1, DELIMITER);
         if (end_ptr) {
           size_t len_string = end_ptr - start_ptr;
           result = (char *)malloc(len_string);
