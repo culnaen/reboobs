@@ -7,7 +7,7 @@
 
 #define DELIMITER '\''
 #define MENU_CHR 'm'
-#define START_DELIMITER_POSITION 10
+#define START_POSITION 11
 
 int main() {
   FILE *fp;
@@ -33,16 +33,16 @@ int main() {
 
   while (fgets(buf, buf_size, fp)) {
     if (buf[0] == MENU_CHR) {
-      start_ptr = buf + START_DELIMITER_POSITION;
+      start_ptr = buf + START_POSITION;
       if (start_ptr) {
-        end_ptr = strchr(start_ptr + 1, DELIMITER);
+        end_ptr = strchr(start_ptr, DELIMITER);
         if (end_ptr) {
           size_t len_string = end_ptr - start_ptr;
-          result = (char *)malloc(len_string);
+          result = (char *)malloc(len_string + 1);
           if (result == NULL) {
             return 0;
           }
-          strncpy(result, start_ptr, len_string + 1);
+          strncpy(result, start_ptr, len_string);
           printf("%zu. %s\n", n, result);
           if (n >= capacity) {
             capacity = capacity == 0 ? 4 : capacity * 2;
