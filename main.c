@@ -67,7 +67,7 @@ int main() {
     if (pid == 0) {
       execl("/usr/bin/sudo", "sudo", "/usr/sbin/grub-reboot", items[choice],
             (char *)NULL);
-      return 1;
+      return 0;
     } else if (pid > 0) {
       waitpid(pid, NULL, 0);
     }
