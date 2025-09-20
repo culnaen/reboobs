@@ -73,13 +73,6 @@ int main() {
     }
 
     free(items);
-
-    pid = fork();
-    if (pid == 0) {
-      execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
-      return 1;
-    } else if (pid > 0) {
-      waitpid(pid, NULL, 0);
-    }
+    execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
   }
 }
