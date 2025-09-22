@@ -69,7 +69,22 @@ int main() {
             (char *)NULL);
       return 0;
     } else if (pid > 0) {
-      waitpid(pid, NULL, 0);
+      int wstatus;
+      if (waitpid(pid, &wstatus, 0) < 0) {
+        perror("# waitpid");
+        return 1;
+      }
+      if (!WIFEXITED(wstatus)) {
+        perror("# chld did not exit");
+        return 1;
+      }
+      if (WEXITSTATUS(wstatus) != 0) {
+        perror("# non-zero exit");
+        return 1;
+      }
+    } else {
+      perror("# fork");
+      return 1;
     }
 
     free(items);
