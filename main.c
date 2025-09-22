@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,11 @@ int main() {
   size_t capacity;
   size_t choice;
   pid_t pid;
+  char next_entry[] = "next_entry=";
+  size_t next_entry_size = strlen(next_entry);
+  char *next_entry_env;
+  size_t next_entry_env_size;
+  bool reboot_flag = false;
 
   n = 0;
   capacity = 0;
@@ -82,12 +88,45 @@ int main() {
         perror("# non-zero exit");
         return 1;
       }
+
+      next_entry_env_size = next_entry_size + strlen(items[choice]);
+      next_entry_env = (char *)malloc(next_entry_env_size);
+      if (next_entry_env == NULL) {
+        perror("# malloc next_entry_env");
+        return 1;
+      }
+
+      strcpy(next_entry_env, next_entry);
+      strcat(next_entry_env, items[choice]);
+      strcat(next_entry_env, "\0");
+      fp = fopen("/boot/grub/grubenv", "r");
+      if (fp == NULL) {
+        perror("# error read /boot/grub/grubenv");
+        return 1;
+      }
+      while (fgets(buf, buf_size, fp)) {
+        if (buf[0] == '#') {
+          continue;
+        }
+        if (!strchr(buf, '=')) {
+          continue;
+        }
+
+        buf[strcspn(buf, "\n")] = '\0';
+        if (strcmp(buf, next_entry_env) == 0) {
+          reboot_flag = true;
+          break;
+        }
+      }
     } else {
       perror("# fork");
       return 1;
     }
 
-    free(items);
-    execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
+    if (reboot_flag) {
+      fclose(fp);
+      free(items);
+      execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
+    }
   }
 }
