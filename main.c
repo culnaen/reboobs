@@ -9,6 +9,10 @@
 #define DELIMITER '\''
 #define MENU_CHR 'm'
 #define START_POSITION 11
+#define GRUB_CFG_PATH "/boot/grub/grub.cfg"
+#define GRUBENV_PATH "/boot/grub/grubenv"
+#define NEXT_ENTRY_KEY "next_entry="
+#define NEXT_ENTRY_KEY_SIZE (sizeof(NEXT_ENTRY_KEY) - 1)
 
 int main() {
   FILE *fp;
@@ -22,8 +26,6 @@ int main() {
   size_t capacity;
   size_t choice;
   pid_t pid;
-  char next_entry[] = "next_entry=";
-  size_t next_entry_size = strlen(next_entry);
   char *next_entry_env;
   size_t next_entry_env_size;
   bool reboot_flag = false;
@@ -32,7 +34,7 @@ int main() {
   capacity = 0;
   items = NULL;
 
-  fp = fopen("/boot/grub/grub.cfg", "r");
+  fp = fopen(GRUB_CFG_PATH, "r");
   if (fp == NULL) {
     perror("error");
   }
@@ -88,18 +90,16 @@ int main() {
         perror("# non-zero exit");
         return 1;
       }
-
-      next_entry_env_size = next_entry_size + strlen(items[choice]);
+      next_entry_env_size = NEXT_ENTRY_KEY_SIZE + strlen(items[choice]);
       next_entry_env = (char *)malloc(next_entry_env_size);
       if (next_entry_env == NULL) {
         perror("# malloc next_entry_env");
         return 1;
       }
-
-      strcpy(next_entry_env, next_entry);
+      strcpy(next_entry_env, NEXT_ENTRY_KEY);
       strcat(next_entry_env, items[choice]);
       strcat(next_entry_env, "\0");
-      fp = fopen("/boot/grub/grubenv", "r");
+      fp = fopen(GRUBENV_PATH, "r");
       if (fp == NULL) {
         perror("# error read /boot/grub/grubenv");
         return 1;
