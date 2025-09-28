@@ -144,12 +144,12 @@ int main() {
       user_menuentry_index <= sizeof(items)) {
 
     user_menuentry = items[user_menuentry_index];
+    free(items);
 
     set_nextentry(user_menuentry);
 
     if (cmp_nextentry(user_menuentry)) {
-      free(items);
-      // execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
+      execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
     }
   }
 }
