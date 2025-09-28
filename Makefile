@@ -11,3 +11,6 @@ $(TARGET): main.c
 
 clean:
 		rm -f reboobs *.o
+
+debug: main.c
+			$(CC) $(CFLAGS) -g main.c -o $(TARGET)
