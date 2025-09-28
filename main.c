@@ -65,13 +65,42 @@ char **get_menuentries(char *path) {
   return items;
 }
 
+int set_nextentry(char *menuentry) {
+  pid_t pid;
+
+  pid = fork();
+  if (pid == 0) {
+    execl("/usr/bin/sudo", "sudo", "/usr/sbin/grub-reboot", menuentry,
+          (char *)NULL);
+    return 1;
+  } else if (pid > 0) {
+    int wstatus;
+    if (waitpid(pid, &wstatus, 0) < 0) {
+      perror("# waitpid");
+      return 0;
+    }
+    if (!WIFEXITED(wstatus)) {
+      perror("# chld did not exit");
+      return 0;
+    }
+    if (WEXITSTATUS(wstatus) != 0) {
+      perror("# non-zero exit");
+      return 0;
+    }
+  } else {
+    perror("# fork");
+    return 0;
+  }
+  return 1;
+}
+
 int main() {
   FILE *fp;
   char buf[256];
   size_t buf_size = 256;
   char **items;
-  size_t choice;
-  pid_t pid;
+  size_t user_menuentry_index;
+  char *user_menuentry;
   char *next_entry_env;
   size_t next_entry_env_size;
   bool reboot_flag = false;
@@ -79,63 +108,46 @@ int main() {
   items = get_menuentries(GRUB_CFG_PATH);
 
   printf("your choice:");
-  if (scanf("%zu", &choice) == 1 && choice <= sizeof(items)) {
-    pid = fork();
-    if (pid == 0) {
-      execl("/usr/bin/sudo", "sudo", "/usr/sbin/grub-reboot", items[choice],
-            (char *)NULL);
-      return 0;
-    } else if (pid > 0) {
-      int wstatus;
-      if (waitpid(pid, &wstatus, 0) < 0) {
-        perror("# waitpid");
-        return 1;
-      }
-      if (!WIFEXITED(wstatus)) {
-        perror("# chld did not exit");
-        return 1;
-      }
-      if (WEXITSTATUS(wstatus) != 0) {
-        perror("# non-zero exit");
-        return 1;
-      }
-      next_entry_env_size = NEXT_ENTRY_KEY_SIZE + strlen(items[choice]);
-      next_entry_env = (char *)malloc(next_entry_env_size);
-      if (next_entry_env == NULL) {
-        perror("# malloc next_entry_env");
-        return 1;
-      }
-      strcpy(next_entry_env, NEXT_ENTRY_KEY);
-      strcat(next_entry_env, items[choice]);
-      strcat(next_entry_env, "\0");
-      fp = fopen(GRUBENV_PATH, "r");
-      if (fp == NULL) {
-        perror("# error read /boot/grub/grubenv");
-        return 1;
-      }
-      while (fgets(buf, buf_size, fp)) {
-        if (buf[0] == '#') {
-          continue;
-        }
-        if (!strchr(buf, '=')) {
-          continue;
-        }
+  if (scanf("%zu", &user_menuentry_index) == 1 &&
+      user_menuentry_index <= sizeof(items)) {
 
-        buf[strcspn(buf, "\n")] = '\0';
-        if (strcmp(buf, next_entry_env) == 0) {
-          reboot_flag = true;
-          break;
-        }
-      }
-    } else {
-      perror("# fork");
+    user_menuentry = items[user_menuentry_index];
+
+    set_nextentry(user_menuentry);
+
+    next_entry_env_size = NEXT_ENTRY_KEY_SIZE + strlen(user_menuentry);
+    next_entry_env = (char *)malloc(next_entry_env_size);
+    if (next_entry_env == NULL) {
+      perror("# malloc next_entry_env");
       return 1;
     }
-
-    if (reboot_flag) {
-      fclose(fp);
-      free(items);
-      // execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
+    strcpy(next_entry_env, NEXT_ENTRY_KEY);
+    strcat(next_entry_env, user_menuentry);
+    strcat(next_entry_env, "\0");
+    fp = fopen(GRUBENV_PATH, "r");
+    if (fp == NULL) {
+      perror("# error read /boot/grub/grubenv");
+      return 1;
     }
+    while (fgets(buf, buf_size, fp)) {
+      if (buf[0] == '#') {
+        continue;
+      }
+      if (!strchr(buf, '=')) {
+        continue;
+      }
+
+      buf[strcspn(buf, "\n")] = '\0';
+      if (strcmp(buf, next_entry_env) == 0) {
+        reboot_flag = true;
+        break;
+      }
+    }
+  }
+
+  if (reboot_flag) {
+    fclose(fp);
+    free(items);
+    // execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
   }
 }
