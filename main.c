@@ -139,7 +139,7 @@ int main() {
 
   items = get_menuentries();
 
-  printf("your choice:");
+  printf("select menuentry index:");
   if (scanf("%zu", &user_menuentry_index) == 1 &&
       user_menuentry_index <= sizeof(items)) {
 
