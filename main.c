@@ -13,7 +13,7 @@
 #define NEXT_ENTRY_KEY "next_entry="
 #define NEXT_ENTRY_KEY_SIZE (sizeof(NEXT_ENTRY_KEY) - 1)
 
-char **get_menuentries(char *path) {
+char **get_menuentries() {
   FILE *fp;
   char buf[256];
   size_t buf_size = 256, n, capacity;
@@ -25,7 +25,7 @@ char **get_menuentries(char *path) {
   n = capacity = 0;
   items = NULL;
 
-  fp = fopen(path, "r");
+  fp = fopen(GRUB_CFG_PATH, "r");
   if (fp == NULL) {
     perror("error");
     return 0;
@@ -137,7 +137,7 @@ int main() {
   size_t user_menuentry_index;
   char *user_menuentry;
 
-  items = get_menuentries(GRUB_CFG_PATH);
+  items = get_menuentries();
 
   printf("your choice:");
   if (scanf("%zu", &user_menuentry_index) == 1 &&
