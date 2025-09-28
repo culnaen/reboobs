@@ -1,5 +1,4 @@
 #include <fcntl.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,16 +93,49 @@ int set_nextentry(char *menuentry) {
   return 1;
 }
 
-int main() {
+int cmp_nextentry(char *menuentry) {
   FILE *fp;
   char buf[256];
   size_t buf_size = 256;
+  char *next_entry_env;
+  size_t next_entry_env_size;
+
+  next_entry_env_size = NEXT_ENTRY_KEY_SIZE + strlen(menuentry);
+  next_entry_env = (char *)malloc(next_entry_env_size);
+  if (next_entry_env == NULL) {
+    perror("# malloc next_entry_env");
+    return 0;
+  }
+  strcpy(next_entry_env, NEXT_ENTRY_KEY);
+  strcat(next_entry_env, menuentry);
+  strcat(next_entry_env, "\0");
+  fp = fopen(GRUBENV_PATH, "r");
+  if (fp == NULL) {
+    perror("# error read /boot/grub/grubenv");
+    return 0;
+  }
+  while (fgets(buf, buf_size, fp)) {
+    if (buf[0] == '#') {
+      continue;
+    }
+    if (!strchr(buf, '=')) {
+      continue;
+    }
+
+    buf[strcspn(buf, "\n")] = '\0';
+    if (strcmp(buf, next_entry_env) == 0) {
+      fclose(fp);
+      return 1;
+    }
+  }
+  fclose(fp);
+  return 0;
+}
+
+int main() {
   char **items;
   size_t user_menuentry_index;
   char *user_menuentry;
-  char *next_entry_env;
-  size_t next_entry_env_size;
-  bool reboot_flag = false;
 
   items = get_menuentries(GRUB_CFG_PATH);
 
@@ -115,39 +147,9 @@ int main() {
 
     set_nextentry(user_menuentry);
 
-    next_entry_env_size = NEXT_ENTRY_KEY_SIZE + strlen(user_menuentry);
-    next_entry_env = (char *)malloc(next_entry_env_size);
-    if (next_entry_env == NULL) {
-      perror("# malloc next_entry_env");
-      return 1;
+    if (cmp_nextentry(user_menuentry)) {
+      free(items);
+      // execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
     }
-    strcpy(next_entry_env, NEXT_ENTRY_KEY);
-    strcat(next_entry_env, user_menuentry);
-    strcat(next_entry_env, "\0");
-    fp = fopen(GRUBENV_PATH, "r");
-    if (fp == NULL) {
-      perror("# error read /boot/grub/grubenv");
-      return 1;
-    }
-    while (fgets(buf, buf_size, fp)) {
-      if (buf[0] == '#') {
-        continue;
-      }
-      if (!strchr(buf, '=')) {
-        continue;
-      }
-
-      buf[strcspn(buf, "\n")] = '\0';
-      if (strcmp(buf, next_entry_env) == 0) {
-        reboot_flag = true;
-        break;
-      }
-    }
-  }
-
-  if (reboot_flag) {
-    fclose(fp);
-    free(items);
-    // execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
   }
 }
