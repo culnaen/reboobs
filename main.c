@@ -14,29 +14,22 @@
 #define NEXT_ENTRY_KEY "next_entry="
 #define NEXT_ENTRY_KEY_SIZE (sizeof(NEXT_ENTRY_KEY) - 1)
 
-int main() {
+char **get_menuentries(char *path) {
   FILE *fp;
   char buf[256];
-  size_t buf_size = 256;
+  size_t buf_size = 256, n, capacity;
   char *start_ptr;
   char *end_ptr;
   char *result;
   char **items;
-  size_t n;
-  size_t capacity;
-  size_t choice;
-  pid_t pid;
-  char *next_entry_env;
-  size_t next_entry_env_size;
-  bool reboot_flag = false;
 
-  n = 0;
-  capacity = 0;
+  n = capacity = 0;
   items = NULL;
 
-  fp = fopen(GRUB_CFG_PATH, "r");
+  fp = fopen(path, "r");
   if (fp == NULL) {
     perror("error");
+    return 0;
   }
 
   while (fgets(buf, buf_size, fp)) {
@@ -48,19 +41,20 @@ int main() {
           size_t len_string = end_ptr - start_ptr;
           result = (char *)malloc(len_string + 1);
           if (result == NULL) {
+            perror("# error malloc");
             return 0;
           }
           strncpy(result, start_ptr, len_string);
-          printf("%zu. %s\n", n, result);
           if (n >= capacity) {
             capacity = capacity == 0 ? 4 : capacity * 2;
             items = realloc(items, capacity * sizeof(char *));
-            if (!items) {
-              perror("realloc");
-              exit(-1);
+            if (items == NULL) {
+              perror("# realloc error");
+              return 0;
             }
           }
           items[n] = result;
+          printf("%zu. %s\n", n, items[n]);
           n++;
         }
       }
@@ -68,9 +62,24 @@ int main() {
   }
 
   fclose(fp);
+  return items;
+}
+
+int main() {
+  FILE *fp;
+  char buf[256];
+  size_t buf_size = 256;
+  char **items;
+  size_t choice;
+  pid_t pid;
+  char *next_entry_env;
+  size_t next_entry_env_size;
+  bool reboot_flag = false;
+
+  items = get_menuentries(GRUB_CFG_PATH);
 
   printf("your choice:");
-  if (scanf("%zu", &choice) == 1 && choice <= n) {
+  if (scanf("%zu", &choice) == 1 && choice <= sizeof(items)) {
     pid = fork();
     if (pid == 0) {
       execl("/usr/bin/sudo", "sudo", "/usr/sbin/grub-reboot", items[choice],
@@ -126,7 +135,7 @@ int main() {
     if (reboot_flag) {
       fclose(fp);
       free(items);
-      execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
+      // execl("/usr/bin/sudo", "sudo", "shutdown", "-r", "0", (char *)NULL);
     }
   }
 }
